@@ -138,7 +138,19 @@ fn apply_request_filters(
 			RouteFilter::RequestRedirect(red) => {
 				return Ok((Some(red.apply(req, path_match)?), header_map));
 			},
-			RouteFilter::DirectResponse(dr) => return Ok((Some(dr.apply(req)?), header_map)),
+			RouteFilter::DirectResponse(dr) => {
+				if let Some(mut r) = dr.apply(req)? {
+					let headers: &mut HeaderMap<HeaderValue> = r.headers_mut();
+					if let Some(header_map2) = header_map {
+						for (k, v) in header_map2 {
+							if let Some(k2) = k {
+								headers.append(k2, v);
+							}
+						}
+					}
+					return Ok((Some(r), None));
+				}
+			},
 			RouteFilter::CORS(c) => {
 				let res = c.apply(req)?;
 				if let Some(dr) = res.direct_response {
@@ -414,7 +426,11 @@ impl HTTPProxy {
 			&path_match,
 			&mut req,
 		)?;
-		if let Some(resp) = direct_response_route {
+		if let Some(mut resp) = direct_response_route {
+			let response_policies = Arc::new(response_polices);
+			// Handle response filters
+			apply_response_filters(selected_route.filters.as_slice(), &mut resp)?;
+			response_policies.apply(&mut resp, log)?;
 			return Ok(resp);
 		}
 		merge_in_headers(
@@ -427,7 +443,12 @@ impl HTTPProxy {
 		let selected_backend = resolve_backend(selected_backend, self.inputs.as_ref())?;
 		let (direct_response, response_headers_backend) =
 			apply_request_filters(selected_backend.filters.as_slice(), &path_match, &mut req)?;
-		if let Some(resp) = direct_response {
+		if let Some(mut resp) = direct_response {
+			let response_policies = Arc::new(response_polices);
+			// Handle response filters
+			apply_response_filters(selected_route.filters.as_slice(), &mut resp)?;
+			apply_response_filters(selected_backend.filters.as_slice(), &mut resp)?;
+			response_policies.apply(&mut resp, log)?;
 			return Ok(resp);
 		}
 		merge_in_headers(

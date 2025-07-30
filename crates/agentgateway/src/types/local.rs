@@ -679,11 +679,11 @@ async fn convert_route(
 				.for_each(|backend| external_backends.push(backend));
 			filters.push(RouteFilter::RequestMirror(pol));
 		}
-		if let Some(p) = direct_response {
-			filters.push(RouteFilter::DirectResponse(p));
-		}
 		if let Some(p) = cors {
 			filters.push(RouteFilter::CORS(p));
+		}
+		if let Some(p) = direct_response {
+			filters.push(RouteFilter::DirectResponse(p));
 		}
 
 		if let Some(p) = mcp_authorization {

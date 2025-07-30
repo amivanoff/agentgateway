@@ -4,7 +4,7 @@ use ::http::uri::InvalidUri;
 use anyhow::anyhow;
 
 use crate::http::uri::Scheme;
-use crate::http::{HeaderMap, HeaderName, HeaderValue, Request, Response, StatusCode, Uri};
+use crate::http::{HeaderMap, HeaderName, HeaderValue, Method, Request, Response, StatusCode, Uri};
 use crate::types::agent::{
 	Backend, HostRedirect, PathMatch, PathRedirect, SimpleBackend, SimpleBackendReference,
 };
@@ -143,11 +143,16 @@ pub struct DirectResponse {
 }
 
 impl DirectResponse {
-	pub fn apply(&self, req: &mut Request) -> Result<Response, Error> {
-		response::Builder::new()
+	pub fn apply(&self, req: &mut Request) -> Result<Option<Response>, Error> {
+		// If OPTIONS, return immediately to let Cors handle the rest
+		if req.method() == Method::OPTIONS {
+			return Ok(None);
+		}
+		let response = response::Builder::new()
 			.status(self.status)
-			.body(http::Body::from(self.body.clone()))
-			.map_err(Into::into)
+			.body(http::Body::from(self.body.clone()))?;
+			//.map_err(Into::into)
+		Ok(Some(response))
 	}
 }
 

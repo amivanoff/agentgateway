@@ -1,0 +1,42 @@
+binds:
+- listeners:
+  - routes:
+    - hostnames: []
+      matches:
+      - path:
+          exact: /.well-known/oauth-protected-resource
+      backends: []
+      name: oauth-protected-resource
+      policies:
+        cors:
+          allowCredentials: true
+          allowHeaders:
+          - '*'
+          allowMethods:
+          - '*'
+          allowOrigins:
+          - '*'
+          exposeHeaders:
+          - '*'
+          maxAge: null
+        directResponse:
+          body: |
+            {
+              "resource": "http://localhost:3003",
+              "authorization_servers": ["http://keycloak:8082/realms/mcp-realm"],
+              "scopes_supported": [
+                "mcp-server-audience",
+                "mcp:scope1",
+                "mcp:scope2",
+                "mcp:scope3"
+              ],
+              "bearer_methods_supported": ["header"],
+              "resource_documentation": "http://localhost:3003/docs",
+              "mcp_protocol_version": "2025-06-18",
+              "resource_type": "mcp-server"
+            }
+          status: 200
+        responseHeaderModifier:
+          set:
+            content-type: application/json;charset=UTF-8
+  port: 3003

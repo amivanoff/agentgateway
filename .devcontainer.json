@@ -1,3 +1,51 @@
 {
-    "image": "mcr.microsoft.com/devcontainers/rust:latest"
+    //"image": "mcr.microsoft.com/devcontainers/rust:latest",
+    "dockerComposeFile": [
+		"../compose-gw-dev.yml"
+	],
+    "service": "agentgateway-dev",
+    "workspaceFolder": "/workspace",
+    // Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		"ghcr.io/devcontainers-extra/features/protoc:1":{
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/node:1": {
+			"nodeGypDependencies": true,
+			"installYarnUsingApt": true,
+			"version": "lts",
+			"pnpmVersion": "latest",
+			"nvmVersion": "latest"
+		},
+		"ghcr.io/devcontainers-extra/features/apt-packages:1": {
+			"packages": [
+				"iputils-ping",
+				"inetutils-telnet",
+				"inetutils-traceroute",
+				"zip",
+				"unzip",
+				"wget",
+				"curl"
+			]
+		}
+	},
+    "customizations": {
+		"vscode": {
+			"extensions": [
+                "pflannery.vscode-versionlens",
+                "elijah-potter.harper",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "humao.rest-client",
+                "hanskre.markdown-execute",
+                "fill-labs.dependi",
+                "usernamehw.errorlens",
+                "Gruntfuggly.todo-tree",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
+                "ms-vscode.hexeditor",
+                "redhat.vscode-yaml"
+            ]
+		}
+	}
 }
