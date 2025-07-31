@@ -33,23 +33,24 @@ The following config exposes the well-known OAuth-protected resource metadata fo
 ```yaml
 - name: stdio-oauth-metadata
   matches:
-    - path:
-        exact: /.well-known/oauth-protected-resource/stdio/mcp
+  - path:
+      exact: /.well-known/oauth-protected-resource/stdio/mcp
   policies:
     cors:
       allowOrigins:
-        - '*'
-    oauthProtectedResource:
-      metadata:
-        authorization_servers:
-          - http://localhost:9000
-        bearer_methods_supported:
-          - header
-          - body
-          - query
-        resource: http://localhost:3000/stdio/mcp
-        resource_documentation: http://localhost:3000/stdio/docs
-        resource_policy_uri: http://localhost:3000/stdio/policies
+      - '*'
+    mcpAuthentication:
+      authorizationServers:
+      - http://localhost:9000
+      scopes:
+      - read:all
+      bearerMethodsSupported:
+      - header
+      - body
+      - query
+      resource: http://localhost:3000/stdio/mcp
+      resourceDocumentation: http://localhost:3000/stdio/docs
+      resourcePolicyUri: http://localhost:3000/stdio/policies
 ```
 
 You can access this metadata at `http://localhost:3000/.well-known/oauth-protected-resource/stdio/mcp`, which will return the following:
@@ -59,6 +60,9 @@ You can access this metadata at `http://localhost:3000/.well-known/oauth-protect
   "authorization_servers": [
     "http://localhost:9000"
   ],
+  "scopes_supported": [
+    "read:all"
+  ],
   "bearer_methods_supported": [
     "header",
     "body",
@@ -66,7 +70,9 @@ You can access this metadata at `http://localhost:3000/.well-known/oauth-protect
   ],
   "resource": "http://localhost:3000/stdio/mcp",
   "resource_documentation": "http://localhost:3000/stdio/docs",
-  "resource_policy_uri": "http://localhost:3000/stdio/policies"
+  "resource_policy_uri": "http://localhost:3000/stdio/policies",
+  "mcp_protocol_version": "2025-06-18",
+	"resource_type": "mcp-server"
 }
 ```
 
@@ -80,9 +86,9 @@ mcpAuthentication:
   issuer: http://localhost:9000
   provider:
     custom:
-      jwks_url: http://localhost:9000/.well-known/jwks.json
+      jwksUrl: http://localhost:9000/.well-known/jwks.json
   scopes:
-    - read:all
+  - read:all
 ```
 
 Requests without a valid JWT will receive a `401 Unauthorized` response, including headers that direct clients to the metadata endpoint for authentication details (issuer, audience, scopes, etc). After obtaining a valid access token, clients retry the request and are authenticated.

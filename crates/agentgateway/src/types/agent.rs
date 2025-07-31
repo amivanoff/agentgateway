@@ -1079,6 +1079,14 @@ pub struct McpAuthentication {
 	pub scopes: Vec<String>,
 	pub audience: String,
 	pub provider: Option<McpIDP>,
+	// Protected Resource Metadata
+	pub resource: Option<String>,
+	pub authorization_servers: Vec<String>,
+	pub bearer_methods_supported: Vec<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub resource_documentation: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub resource_policy_uri: Option<String>,
 }
 
 impl McpAuthentication {

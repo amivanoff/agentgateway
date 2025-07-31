@@ -272,12 +272,12 @@ impl App {
 		let new_uri = Self::get_redirect_url(&req, "/.well-known/oauth-protected-resource");
 		// We will unconditionally redirect them back to our own proxy -- not the Authorization Server.
 		let json_body = json!({
-			"resource": format!("{}/mcp", new_uri),
-			// "authorization_servers": ["https://dev-d1dqcqi4qgzwvabi.us.auth0.com"],
-			"authorization_servers": [format!("{new_uri}")],
+			"resource": auth.resource.unwrap_or(format!("{}/mcp", new_uri)),
+			"authorization_servers": auth.authorization_servers,
 			"scopes_supported": auth.scopes,
-			"bearer_methods_supported": ["header"],
-			// "resource_documentation": "http://lo/docs",
+			"bearer_methods_supported": auth.bearer_methods_supported,
+			"resource_documentation": auth.resource_documentation,
+			"resource_policy_uri": auth.resource_policy_uri,
 			"mcp_protocol_version": "2025-06-18",
 			"resource_type": "mcp-server"
 		});

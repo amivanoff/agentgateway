@@ -991,6 +991,27 @@
                                           "keycloak"
                                         ],
                                         "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "custom": {
+                                            "type": "object",
+                                            "properties": {
+                                              "jwksUrl": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "jwksUrl"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "custom"
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     ]
                                   },
@@ -998,6 +1019,23 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "resource": {
+                                "type": "string"
+                              },
+                              "authorizationServers": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "default": []
+                              },
+                              "bearerMethodsSupported": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "default": ["header"]
                               }
                             },
                             "required": [
