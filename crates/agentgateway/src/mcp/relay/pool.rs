@@ -4,7 +4,7 @@ use futures::future::BoxFuture;
 use futures::stream::BoxStream;
 use futures::{FutureExt, StreamExt};
 use http::Uri;
-use http::header::CONTENT_TYPE;
+use http::header::{AUTHORIZATION, CONTENT_TYPE};
 use reqwest::header::ACCEPT;
 use reqwest::{Client as HttpClient, IntoUrl, Url};
 use rmcp::model::{ClientJsonRpcMessage, ServerJsonRpcMessage};
@@ -20,11 +20,14 @@ use rmcp::transport::streamable_http_client::{
 };
 use rmcp::transport::{SseClientTransport, StreamableHttpClientTransport, Transport};
 use rmcp::{ClientHandler, ServiceError};
+use secrecy::{ExposeSecret, SecretString};
 use sse_stream::{Error as SseError, Sse, SseStream};
 
 use super::*;
 use crate::client::Client;
 use crate::http::{Body, Error as HttpError, Response, auth};
+use crate::http::jwt::Claims;
+use crate::mcp::relay::pool::auth::BackendAuth;
 use crate::mcp::relay::upstream::UpstreamTargetSpec;
 use crate::mcp::sse::McpTarget;
 use crate::proxy::ProxyError;
@@ -238,8 +241,25 @@ impl ConnectionPool {
 					_ => mcp.path.as_str(),
 				};
 				let be = crate::proxy::resolve_simple_backend(&mcp.backend, &self.pi)?;
-				let client =
-					ClientWrapper::new_with_client(be, self.client.clone(), target.backend_policies.clone());
+				let client = match target.backend_policies.backend_auth {
+					Some(BackendAuth::Passthrough {}) => {
+						let auth_header: Option<HeaderValue> =
+							if let Some(claim) = &rq_ctx.identity.claims {
+								if let Ok(mut token) = http::HeaderValue::from_str(&format!("Bearer {}", claim.jwt.expose_secret())) {
+									token.set_sensitive(true);
+									Some(token)
+								} else {
+									None
+								}
+							} else {
+								None
+							};
+						ClientWrapper::new_with_client_auth(be, self.client.clone(), target.backend_policies.clone(), auth_header)
+					},
+					_ => {
+						ClientWrapper::new_with_client(be, self.client.clone(), target.backend_policies.clone())
+					},
+				};
 				let mut transport = StreamableHttpClientTransport::with_client(
 					client,
 					StreamableHttpClientTransportConfig {
@@ -459,6 +479,7 @@ pub struct ClientWrapper {
 	backend: Arc<SimpleBackend>,
 	client: PolicyClient,
 	policies: BackendPolicies,
+	auth_header: Option<HeaderValue>,
 }
 
 impl ClientWrapper {
@@ -471,6 +492,21 @@ impl ClientWrapper {
 			backend: Arc::new(backend),
 			client,
 			policies,
+			auth_header: None,
+		}
+	}
+
+	pub fn new_with_client_auth(
+		backend: SimpleBackend,
+		client: PolicyClient,
+		policies: BackendPolicies,
+		auth_header: Option<HeaderValue>
+	) -> Self {
+		Self {
+			backend: Arc::new(backend),
+			client,
+			policies,
+			auth_header,
 		}
 	}
 
@@ -521,6 +557,10 @@ impl StreamableHttpClient for ClientWrapper {
 					.parse()
 					.map_err(|e| StreamableHttpError::Client(HttpError::new(e)))?,
 			);
+		}
+
+		if let Some(auth_header) = &self.auth_header {
+			req.headers_mut().insert(AUTHORIZATION, auth_header.clone());
 		}
 
 		let resp = client

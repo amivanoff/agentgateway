@@ -1,0 +1,32 @@
+binds:
+- listeners:
+  - routes:
+    - matches:
+      - path:
+          exact: /mcp
+      backends:
+      - mcp:
+          targets:
+          - name: everything
+            stdio:
+              cmd: npx
+              args: ["@modelcontextprotocol/server-everything"]
+      policies:
+        # triggers JWT Token passthrough
+        backendAuth:
+          passthrough: {}
+        cors:
+          allowHeaders:
+          - '*'
+          allowOrigins:
+          - '*'
+        # from authorization example, needed for JWT token extraction
+        # instead of jwtAuth you could use mcpAuthentication from pull/212
+        jwtAuth:
+          issuer: agentgateway.dev
+          audiences: [test.agentgateway.dev]
+          jwks:
+            # Relative to the folder the binary runs from, not the config file
+            file: ./manifests/jwt/pub-key
+        # mcpAuthorization policy from authorization example could be used too
+  port: 3003
